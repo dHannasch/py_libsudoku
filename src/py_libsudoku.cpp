@@ -12,6 +12,9 @@
 #include <pybind11/stl.h>
 namespace py = pybind11;
 
+// https://pybind11.readthedocs.io/en/stable/advanced/cast/stl.html#making-opaque-types
+PYBIND11_MAKE_OPAQUE(std::vector<sudoku::Board>);
+
 PYBIND11_MODULE(py_libsudoku, m) {
     m.doc() = "Python bindings for libsudoku";
 
@@ -77,12 +80,25 @@ PYBIND11_MODULE(py_libsudoku, m) {
         .value("ASYNC_SOLVING_SUBMITTED", sudoku::SolverResult::ASYNC_SOLVING_SUBMITTED)
         .value("ASYNC_SOLVING_BUSY", sudoku::SolverResult::ASYNC_SOLVING_BUSY);
 
+    py::class_<std::vector<sudoku::Board>>(m, "VectorOfBoards")
+        .def(py::init<>())
+        .def("clear", &std::vector<sudoku::Board>::clear)
+        .def("pop_back", &std::vector<sudoku::Board>::pop_back)
+        .def("__len__", [](const std::vector<sudoku::Board> &v) { return v.size(); })
+        .def("__iter__", [](std::vector<sudoku::Board> &v) {
+           return py::make_iterator(v.begin(), v.end());
+        }, py::keep_alive<0, 1>()); /* Keep vector alive while iterator is used */
+
     py::class_<sudoku::Solver>(m, "Solver")
         .def(py::init())
         .def("solve", 
              (sudoku::SolverResult (sudoku::Solver::*)(const sudoku::Board &, sudoku::Board &)) &sudoku::Solver::solve,
              "Solves a Sudoku puzzle using the default candidates vector.")
         .def("solve", 
+             (sudoku::SolverResult (sudoku::Solver::*)(const sudoku::Board &, const std::vector<uint8_t> &, sudoku::Board &,
+                                                       size_t, std::vector<sudoku::Board> &)) &sudoku::Solver::solve,
+             "Solves a Sudoku puzzle using the given candidates vector.")
+        .def("solve",
              (sudoku::SolverResult (sudoku::Solver::*)(const sudoku::Board &, const std::vector<uint8_t> &, sudoku::Board &)) &sudoku::Solver::solve,
              "Solves a Sudoku puzzle using the given candidates vector.");
 }
