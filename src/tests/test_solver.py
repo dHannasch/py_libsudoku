@@ -52,3 +52,4 @@ def test_multiple_solutions():
     for board in vector:
       assert board.isComplete
       assert board.isValid
+    assert py_libsudoku.Solver().countSolutions(solvable_multiple_solutions, 8) == 7
