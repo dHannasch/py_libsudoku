@@ -10,6 +10,7 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/operators.h>
 #include <pybind11/stl.h>
+#include <pybind11/numpy.h>
 namespace py = pybind11;
 
 PYBIND11_MODULE(py_libsudoku, m) {
@@ -20,7 +21,34 @@ PYBIND11_MODULE(py_libsudoku, m) {
         .value("INVALID_VALUE", sudoku::SetValueResult::INVALID_VALUE)
         .value("VALUE_INVALIDATES_BOARD", sudoku::SetValueResult::VALUE_INVALIDATES_BOARD);
 
-    py::class_<sudoku::Board>(m, "Board")
+    py::class_<sudoku::Board>(m, "Board", py::buffer_protocol())
+
+        .def_buffer([](sudoku::Board &board) -> py::buffer_info {
+            return py::buffer_info(
+                board.buffer_protocol_array_access(),                                /* Pointer to buffer */
+                sizeof(std::uint8_t),                          /* Size of one scalar */
+                py::format_descriptor<std::uint8_t>::format(), /* Python struct-style format descriptor */
+                2,                                       /* Number of dimensions */
+                { 9, 9 },                  /* Buffer dimensions */
+                { sizeof(std::uint8_t) * 9,
+                  sizeof(std::uint8_t) }
+                                                         /* Strides (in bytes) for each index */
+            );
+         })
+
+        .def("__init__", [](sudoku::Board& board, py::array_t<std::uint8_t, py::array::c_style | py::array::forcecast> arr) {
+            /* Request a buffer descriptor from Python */
+            py::buffer_info info = arr.request();
+
+            /* Some sanity checks ... */
+            if (info.format != py::format_descriptor<std::uint8_t>::format())
+                throw std::runtime_error("Incompatible format: expected a uint8 array!");
+
+            if (info.ndim != 2)
+                throw std::runtime_error("Incompatible buffer dimension!");
+
+            new (&board) sudoku::Board(*static_cast<sudoku::Board*>(info.ptr));
+        })
 
         .def(py::init(), "Creates an empty board.")
 
