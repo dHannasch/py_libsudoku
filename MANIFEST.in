@@ -1,0 +1,4 @@
+# https://github.com/patrikhuber/eos/blob/master/MANIFEST.in
+recursive-include libsudoku *
+recursive-include pybind11 *
+# An alternative to including pybind11 here is to FetchContent https://stackoverflow.com/questions/47027741/smart-way-to-cmake-a-project-using-pybind11-by-externalproject-add

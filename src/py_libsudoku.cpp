@@ -10,7 +10,11 @@
 #include <pybind11/pybind11.h>
 #include <pybind11/operators.h>
 #include <pybind11/stl.h>
+#include <pybind11/numpy.h>
 namespace py = pybind11;
+
+// https://pybind11.readthedocs.io/en/stable/advanced/cast/stl.html#making-opaque-types
+PYBIND11_MAKE_OPAQUE(std::vector<sudoku::Board>);
 
 PYBIND11_MODULE(py_libsudoku, m) {
     m.doc() = "Python bindings for libsudoku";
@@ -20,7 +24,34 @@ PYBIND11_MODULE(py_libsudoku, m) {
         .value("INVALID_VALUE", sudoku::SetValueResult::INVALID_VALUE)
         .value("VALUE_INVALIDATES_BOARD", sudoku::SetValueResult::VALUE_INVALIDATES_BOARD);
 
-    py::class_<sudoku::Board>(m, "Board")
+    py::class_<sudoku::Board>(m, "Board", py::buffer_protocol())
+
+        .def_buffer([](sudoku::Board &board) -> py::buffer_info {
+            return py::buffer_info(
+                board.buffer_protocol_array_access(),                                /* Pointer to buffer */
+                sizeof(std::uint8_t),                          /* Size of one scalar */
+                py::format_descriptor<std::uint8_t>::format(), /* Python struct-style format descriptor */
+                2,                                       /* Number of dimensions */
+                { 9, 9 },                  /* Buffer dimensions */
+                { sizeof(std::uint8_t) * 9,
+                  sizeof(std::uint8_t) }
+                                                         /* Strides (in bytes) for each index */
+            );
+         })
+
+        .def("__init__", [](sudoku::Board& board, py::array_t<std::uint8_t, py::array::c_style | py::array::forcecast> arr) {
+            /* Request a buffer descriptor from Python */
+            py::buffer_info info = arr.request();
+
+            /* Some sanity checks ... */
+            if (info.format != py::format_descriptor<std::uint8_t>::format())
+                throw std::runtime_error("Incompatible format: expected a uint8 array!");
+
+            if (info.ndim != 2)
+                throw std::runtime_error("Incompatible buffer dimension!");
+
+            new (&board) sudoku::Board(*static_cast<sudoku::Board*>(info.ptr));
+        })
 
         .def(py::init(), "Creates an empty board.")
 
@@ -77,12 +108,28 @@ PYBIND11_MODULE(py_libsudoku, m) {
         .value("ASYNC_SOLVING_SUBMITTED", sudoku::SolverResult::ASYNC_SOLVING_SUBMITTED)
         .value("ASYNC_SOLVING_BUSY", sudoku::SolverResult::ASYNC_SOLVING_BUSY);
 
+    py::class_<std::vector<sudoku::Board>>(m, "VectorOfBoards")
+        .def(py::init<>())
+        .def("clear", &std::vector<sudoku::Board>::clear)
+        .def("pop_back", &std::vector<sudoku::Board>::pop_back)
+        .def("__len__", [](const std::vector<sudoku::Board> &v) { return v.size(); })
+        .def("__iter__", [](std::vector<sudoku::Board> &v) {
+           return py::make_iterator(v.begin(), v.end());
+        }, py::keep_alive<0, 1>()); /* Keep vector alive while iterator is used */
+
     py::class_<sudoku::Solver>(m, "Solver")
         .def(py::init())
+        .def("countSolutions",
+             (std::size_t (sudoku::Solver::*)(const sudoku::Board &, std::size_t)) &sudoku::Solver::countSolutions,
+             "Counts the number of solutions to a Sudoku puzzle using the default candidates vector.")
         .def("solve", 
              (sudoku::SolverResult (sudoku::Solver::*)(const sudoku::Board &, sudoku::Board &)) &sudoku::Solver::solve,
              "Solves a Sudoku puzzle using the default candidates vector.")
         .def("solve", 
+             (sudoku::SolverResult (sudoku::Solver::*)(const sudoku::Board &, const std::vector<uint8_t> &, sudoku::Board &,
+                                                       size_t, std::vector<sudoku::Board> &)) &sudoku::Solver::solve,
+             "Solves a Sudoku puzzle using the given candidates vector.")
+        .def("solve",
              (sudoku::SolverResult (sudoku::Solver::*)(const sudoku::Board &, const std::vector<uint8_t> &, sudoku::Board &)) &sudoku::Solver::solve,
              "Solves a Sudoku puzzle using the given candidates vector.");
 }
