@@ -1,4 +1,21 @@
 import py_libsudoku as lsk
+import time
+
+asyncSolveComplete = False
+
+def onSolverProgress(progressPercentage, numSolutions):
+    print(".... asyncSolveForGood at {:05.2f}%: {} solution(s) so far"
+          .format(progressPercentage, numSolutions))
+
+def onSolverFinished(result, solvedBoards):
+    global asyncSolveComplete
+    asyncSolveComplete = True
+    print()
+    print("asyncSolveForGood finished: {}".format(result))
+    print("Found {} solution(s):".format(len(solvedBoards)))
+    for b in solvedBoards:
+        print()
+        print("{}".format(b))
 
 solvable_one_solution = lsk.Board(
     [0, 0, 6, 0, 0, 8, 5, 0, 0,
@@ -28,3 +45,15 @@ if result == lsk.SolverResult.NO_ERROR:
           .format(solution.isComplete))
 else:
     print("... could not find solution :(")
+
+print()
+print("Doing an exhaustive search for all solutions ...")
+print("   (there's just 1, but it will take long to find that out.)")
+print("...")
+
+solver.asyncSolveForGood(solvable_one_solution,
+                         onSolverProgress,
+                         onSolverFinished)
+
+while not asyncSolveComplete:
+    time.sleep(0.1)

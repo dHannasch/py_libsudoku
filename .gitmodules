@@ -3,4 +3,4 @@
 	url = https://github.com/pybind/pybind11.git
 [submodule "libsudoku"]
 	path = libsudoku
-	url = git@github.com:raulcostajunior/libsudoku.git
+	url = https://github.com/raulcostajunior/libsudoku.git
