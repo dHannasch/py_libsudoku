@@ -158,6 +158,7 @@ PYBIND11_MODULE(py_libsudoku, m) {
     py::class_<sudoku::Solver>(m, "Solver")
 
         .def(py::init())
+
         .def("countSolutions",
              (std::size_t (sudoku::Solver::*)(const sudoku::Board &, std::size_t)) &sudoku::Solver::countSolutions,
              "Counts the number of solutions to a Sudoku puzzle using the default candidates vector.")
