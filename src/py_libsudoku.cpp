@@ -157,6 +157,9 @@ PYBIND11_MODULE(py_libsudoku, m) {
         .def("cancelAsyncGenerate", &sudoku::Generator::cancelAsyncGenerate,
              "Cancels any ongoing asyncGenerate processing.")
 
+        .def("fullSudokuBoard", &sudoku::Generator::fullSudokuBoard,
+             "Generates a random filled valid Sudoku board.")
+
         .def("maxEmptyPositions", &sudoku::Generator::maxEmptyPositions,
              "The maximum number of empty positions allowed in a generated puzzle with a given difficulty.")
 
