@@ -4,3 +4,4 @@
 [submodule "libsudoku"]
 	path = libsudoku
 	url = https://github.com/dHannasch/libsudoku.git
+

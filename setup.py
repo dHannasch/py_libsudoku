@@ -59,13 +59,14 @@ class CMakeBuild(build_ext):
 
 setup(
     name='py-libsudoku',
-    version='0.7',
+    version='1.0.12',
     author='Raul Costa Junior',
     author_email='raulcostajunior@gmail.com',
     description='Python bindings for libsudoku',
     long_description='Python bindings for libsudoku - a C++ lib for generating and solving Sudoku puzzles.',
     ext_modules=[CMakeExtension('py_libsudoku')],
     cmdclass=dict(build_ext=CMakeBuild),
+    url='https://github.com/raulcostajunior/py_libsudoku',
     zip_safe=False,
     use_scm_version=True,
     setup_requires=['setuptools_scm'],
